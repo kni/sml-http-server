@@ -7,6 +7,7 @@ datatype ('c, 'd) Env = Env of {
   pathInfo        : string,
   queryString     : string,
   serverProtocol  : string,
+  input           : TextIO.instream option,
   headers         : (string * string) list,
   workerHookData  : 'c option,
   connectHookData : 'd option
@@ -120,18 +121,11 @@ fun run (Settings settings) =
 
         fun read timeout socket = NetServer.read (socket, chunksize, timeout)
 
-        fun readContent socket cl buf =
-          let
-            val s = String.size buf
-          in
-            if cl <= s
-            then String.substring (buf, cl, s - cl)
-            else (case read timeout socket of "" => if needStop () then "" else raise HttpBadRequest | buf => readContent socket (cl - s) buf)
-          end
+        fun readContent socket cl buf = HttpContent.readContent needStop read timeout socket cl buf
+          handle HttpContent.HttpBadContent => raise HttpBadRequest | exc => raise exc
 
-
-        fun readChunkes socket buf = HttpChunks.readChunkes needStop read timeout socket buf
-          handle HttpChunks.HttpBadChunks => raise HttpBadRequest | exc => raise exc
+        fun readChunkes socket buf = HttpContent.readChunkes needStop read timeout socket buf
+          handle HttpContent.HttpBadChunks => raise HttpBadRequest | exc => raise exc
 
 
         fun doit buf =
@@ -139,20 +133,9 @@ fun run (Settings settings) =
                NONE => (case read timeout socket of "" => () | b => doit (buf ^ b))
              | SOME (method, uri, path, query, protocol, headers, buf) =>
                  let
-                   val env = Env {
-                     requestMethod   = method,
-                     requestURI      = uri,
-                     pathInfo        = path,
-                     queryString     = query,
-                     serverProtocol  = protocol,
-                     headers         = headers,
-                     workerHookData  = workerHookData,
-                     connectHookData = connectHookData
-                   }
-
                    val (persistent, keepAliveHeader) = isPersistent protocol headers
 
-                   val buf =
+                   val (inputContent, buf) =
                      if method = "POST" orelse method = "PUT"
                      then (
                        if findPairValue "expect" headers = SOME "100-continue"
@@ -167,12 +150,25 @@ fun run (Settings settings) =
                        | NONE => (
                            if findPairValue "transfer-encoding" headers = SOME "chunked"
                            then readChunkes socket buf
-                           else buf
+                           else (NONE, buf)
                          )
                      )
-                     else buf
+                     else (NONE, buf)
+
+                   val env = Env {
+                     requestMethod   = method,
+                     requestURI      = uri,
+                     pathInfo        = path,
+                     queryString     = query,
+                     serverProtocol  = protocol,
+                     headers         = headers,
+                     input           = inputContent,
+                     workerHookData  = workerHookData,
+                     connectHookData = connectHookData
+                   }
 
                    val res = (#handler settings) env handle exc => ResponseSimple ("500", [], "Internal server error\r\n")
+                   val _ = case inputContent of NONE => () | SOME inputContent => TextIO.closeIn inputContent
                  in
                    doResponse timeout socket keepAliveHeader res;
                    if persistent then doit buf else ()
