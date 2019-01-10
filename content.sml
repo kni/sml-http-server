@@ -113,6 +113,8 @@ exception HttpBadChunks
 
 local
 
+val maxChunkSizeEntity = 1024
+
 fun getChunkSize t =
   let
     fun parser i getc strm =
@@ -171,6 +173,7 @@ fun readChunkes needStop read timeout socket buf =
     fun doit buf =
       case getChunkSize buf of
           NONE => (
+            if String.size buf > maxChunkSizeEntity then raise HttpBadChunks else
             case read timeout socket of
                 "" => if needStop () then "" else raise HttpBadChunks
               | b  => doit (buf ^ b)
@@ -223,6 +226,7 @@ fun test () =
   in
     test ["0\r\n\r\n"] "" "";
     test ["5\r\n", "Hello\r\n", "0\r\n\r\n"] "Hello" "";
+    test ["5 chunk-extension \r\n", "Hello\r\n", "0\r\n\r\n"] "Hello" "";
     test ["5\r\n", "Hell", "o\r\n", "0\r\n\r\n", ""] "Hello" "";
     test ["5\r\nHello\r\n", "A\r\n, Plack!\r\n\r\n", "0\r\n\r\n", "", ""] "Hello, Plack!\r\n" "";
     test ["5\r\nHello\r\nA\r\n, Plack!\r\n\r\n0\r\n\r\nXXXX\n"] "Hello, Plack!\r\n" "XXXX\n";
