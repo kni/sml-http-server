@@ -7,8 +7,8 @@ datatype ('c, 'd) Env = Env of {
   pathInfo        : string,
   queryString     : string,
   serverProtocol  : string,
-  input           : TextIO.instream option,
   headers         : (string * string) list,
+  input           : TextIO.instream option,
   workerHookData  : 'c option,
   connectHookData : 'd option
 }
@@ -105,9 +105,6 @@ fun isPersistent "HTTP/1.0" headers = (case findConnectionHeader headers of SOME
 
 
 exception HttpBadRequest
-
-
-
 
 
 fun run (Settings settings) =
