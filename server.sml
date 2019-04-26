@@ -182,7 +182,7 @@ fun run (Settings settings) =
 
         (doit "" handle
             HttpBadRequest => (doResponse timeout socket false (ResponseSimple ("400", [], "Bad Request\r\n")); ())
-          | OS.SysErr (msg,  SOME ECONNRESET) => logger ("ERROR ECONNRESET: " ^ msg ^ "\n")
+          | exc as OS.SysErr (s, SOME e) => if OS.errorName e = "ECONNRESET" orelse OS.errorName e = "connreset" then logger ("ERROR ECONNRESET: " ^ s ^ "\n") else raise exc
           | exc => raise exc);
 
         logger "BY, socket."
