@@ -62,6 +62,7 @@ val settings = HttpServer.Settings {
   reuseport      = false,
   workerHook     = SOME ( (fn () => logger "Worker init hook."),  (fn _  => logger "Worker cleanup hook.") ),
   connectHook    = SOME ( (fn () => (logger "Connect init hook."; "It's connect hook data.")), (fn _  => logger "Connect cleanup hook.") ),
+  (* connectHook    = NONE : ((unit -> unit) * (unit -> unit)) option, *)
   logger         = logger,
   timeout        = SOME (Time.fromSeconds 180)
 }
