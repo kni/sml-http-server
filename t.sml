@@ -48,7 +48,7 @@ fun handler (HttpServer.Env env) =
               SOME inputStream => TextIO.inputAll inputStream ^ "\r\n"
             | NONE => "-\r\n"
           )
-      | _ => HttpServer.ResponseSimple ("200 OK", [], "Hello!\r\n")
+      | _ => HttpServer.ResponseSimple ("200 OK", [], "<a href='http://sml.org'>Hello!</a>\r\n")
   end
 
 
@@ -58,7 +58,7 @@ val settings = HttpServer.Settings {
   host           = "*",
   acceptQueue    = 128,
   workers        = 4,    (* 0 - without workers *)
-  maxRequests    = 1000, (* max requests per worker, 0 - without limit *)
+  maxRequests    = 0,    (* max requests per worker, 0 - without limit, do not use without workers *)
   reuseport      = false,
   workerHook     = SOME ( (fn () => logger "Worker init hook."),  (fn _  => logger "Worker cleanup hook.") ),
   connectHook    = SOME ( (fn () => (logger "Connect init hook."; "It's connect hook data.")), (fn _  => logger "Connect cleanup hook.") ),

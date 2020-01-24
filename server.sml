@@ -178,14 +178,14 @@ fun run (Settings settings) =
 
 
       in
-        logger "HELLO, socket.";
+        (* logger "HELLO, socket."; *)
 
         (doit "" handle
             HttpBadRequest => (doResponse timeout socket false (ResponseSimple ("400", [], "Bad Request\r\n")); ())
-          | exc as OS.SysErr (s, SOME e) => if OS.errorName e = "ECONNRESET" orelse OS.errorName e = "connreset" then logger ("ERROR ECONNRESET: " ^ s ^ "\n") else raise exc
-          | exc => raise exc);
+          | exc as OS.SysErr (s, SOME e) => if OS.errorName e = "ECONNRESET" orelse OS.errorName e = "connreset" then () else raise exc
+          | exc => raise exc)
 
-        logger "BY, socket."
+        (* ; logger "BY, socket." *)
       end
 
   in

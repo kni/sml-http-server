@@ -1,6 +1,9 @@
-use "net-server/os-constants.sml";
-use "net-server/server-poly.sml";
-use "net-server/server.sml";
+val p = getOpt (OS.Process.getEnv "USER_SML_LIB", ".") ^ "/";
+
+use (p ^ "net-server/os-constants.sml");
+use (p ^ "net-server/server-poly.sml");
+use (p ^ "net-server/server.sml");
+
 use "headers.sml";
 use "content.sml";
 use "server.sml";
