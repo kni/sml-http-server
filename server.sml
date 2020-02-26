@@ -169,7 +169,7 @@ fun run (Settings settings) =
                      connectHookData = connectHookData
                    }
 
-                   val res = (#handler settings) env handle exc => ResponseSimple ("500", [], "Internal server error\r\n")
+                   val res = (#handler settings) env handle exc => (logger (exnMessage exc); ResponseSimple ("500", [], "Internal server error\r\n"))
                    val _ = case inputContent of NONE => () | SOME inputContent => TextIO.closeIn inputContent
                  in
                    doResponse timeout socket keepAliveHeader res;
