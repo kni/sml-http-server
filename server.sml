@@ -49,25 +49,21 @@ local
     | doHeaders headers = (String.concatWith "\r\n" (List.map (fn (a, b) => (a ^ ": " ^ b)) headers)) ^ "\r\n"
 
   fun doResponseSimple timeout socket keepAliveHeader (code, headers, body) =
-    let
-      val contentLength = String.size body
-    in
-      if contentLength = 0
-      then write timeout socket ("HTTP/1.1 " ^ code ^ "\r\n" ^
-          (if keepAliveHeader then "Connection: keep-alive\r\n" else "") ^
-          (doHeaders headers) ^
-          "\r\n"
-        )
-      else write timeout socket ("HTTP/1.1 " ^ code ^ "\r\n" ^
-          (if keepAliveHeader then "Connection: keep-alive\r\n" else "") ^
-          (doHeaders headers) ^
-          "Content-Length: " ^ (Int.toString contentLength) ^ "\r\n" ^
-          "\r\n" ^
-          body
-        )
-    end
-
+    write timeout socket ("HTTP/1.1 " ^ code ^ "\r\n" ^
+      (if keepAliveHeader then "Connection: keep-alive\r\n" else "") ^
+      (doHeaders headers) ^
+      "Content-Length: " ^ (Int.toString (String.size body)) ^ "\r\n" ^
+      "\r\n" ^
+      body
+    )
 in
+  fun doResponseHeaders timeout socket keepAliveHeader (code, headers) =
+    write timeout socket ("HTTP/1.1 " ^ code ^ "\r\n" ^
+      (if keepAliveHeader then "Connection: keep-alive\r\n" else "") ^
+      (doHeaders headers) ^
+      "\r\n"
+    )
+
   fun doResponse timeout socket keepAliveHeader (ResponseSimple (code, headers, body)) = doResponseSimple timeout socket keepAliveHeader (code, headers, body)
     | doResponse timeout socket keepAliveHeader (ResponseDelayed f) = f (doResponseSimple timeout socket keepAliveHeader)
     | doResponse timeout socket keepAliveHeader (ResponseStream f) =
@@ -141,7 +137,7 @@ fun run (Settings settings) =
                      if method = "POST" orelse method = "PUT"
                      then (
                        if findPairValue "expect" headers = SOME "100-continue"
-                       then doResponse timeout socket keepAliveHeader (ResponseSimple ("100 Continue", [], "")) else true;
+                       then doResponseHeaders timeout socket keepAliveHeader ("100 Continue", []) else true;
 
                        case findPairValue "content-length" headers of
                          SOME cl => (
