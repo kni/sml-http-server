@@ -1,7 +1,7 @@
 val p = getOpt (OS.Process.getEnv "USER_SML_LIB", ".") ^ "/";
 
 use (p ^ "net-server/os-constants.sml");
-use (p ^ "net-server/server-poly.sml");
+use (p ^ "net-server/server-polyml.sml");
 use (p ^ "net-server/server.sml");
 
 use "headers.sml";
