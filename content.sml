@@ -146,7 +146,7 @@ fun readChunkData needStop read timeout socket buf n i ic =
        then (
          if s >= i + n + 2
          then (if String.sub (buf, i + n + 1) = #"\n" then String.substring (buf, i + n + 2, s - i - n - 2) else raise HttpBadChunks )
-         else (case read timeout socket of "" => if needStop () then "" else raise HttpBadChunks | b => readChunkData needStop read timeout socket (buf ^ b) n i ic)
+         else (case read timeout socket of "" => if needStop () then "" else raise HttpBadChunks | b => readChunkData needStop read timeout socket ((String.substring (buf, i + n + 1, s - i - n - 1)) ^ b) 0 0 ic)
        )
        else if c = #"\n"
        then String.substring (buf, i + n + 1, s - i - n - 1)
@@ -226,10 +226,13 @@ fun test () =
   in
     test ["0\r\n\r\n"] "" "";
     test ["5\r\n", "Hello\r\n", "0\r\n\r\n"] "Hello" "";
-    test ["5 chunk-extension \r\n", "Hello\r\n", "0\r\n\r\n"] "Hello" "";
     test ["5\r\n", "Hell", "o\r\n", "0\r\n\r\n", ""] "Hello" "";
+    test ["5 chunk-extension \r\n", "Hello\r\n", "0\r\n\r\n"] "Hello" "";
     test ["5\r\nHello\r\n", "A\r\n, Plack!\r\n\r\n", "0\r\n\r\n", "", ""] "Hello, Plack!\r\n" "";
     test ["5\r\nHello\r\nA\r\n, Plack!\r\n\r\n0\r\n\r\nXXXX\n"] "Hello, Plack!\r\n" "XXXX\n";
+
+    test ["5\r\nHello", "\r\n0\r\n\r\n", "", ""] "Hello" "";
+    test ["5\r\nHello\r", "\n0\r\n\r\n", "", ""] "Hello" "";
     ()
   end
 
